@@ -237,9 +237,9 @@ func _input(event):
 		if cell_info.x < 0:
 			return
 		
-		# Двойной клик/тап — флаг
+		# Двойной клик/тап — chord reveal (открыть соседние клетки)
 		if is_press and is_double:
-			_toggle_flag(cell_info.y, cell_info.x)
+			_chord_reveal(cell_info.y, cell_info.x)
 			press_handled = true
 			return
 		
@@ -261,16 +261,13 @@ func _input(event):
 func _process(delta):
 	if press_start_time > 0 and !press_handled and !game_over:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
-		if hold_time >= chord_press_time:
-			# Очень долгий тап — открыть все соседние клетки (chord)
+		if hold_time >= long_press_time:
+			# Долгий тап — флаг
 			if press_cell.x >= 0:
-				_chord_reveal(press_cell.y, press_cell.x)
+				_toggle_flag(press_cell.y, press_cell.x)
 				press_handled = true
 				if OS.has_feature("mobile"):
-					Input.vibrate_handheld(100)
-		elif hold_time >= long_press_time:
-			# Пока не обрабатываем — ждём, может будет chord
-			pass
+					Input.vibrate_handheld(50)
 
 func _get_cell_at(pos: Vector2) -> Vector2i:
 	for child in grid.get_children():
