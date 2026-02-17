@@ -210,21 +210,30 @@ func _input(event):
 	if event is InputEventScreenTouch or event is InputEventMouseButton:
 		var is_press = false
 		var is_release = false
+		var is_double = false
 		var pos = Vector2.ZERO
 		
 		if event is InputEventScreenTouch:
 			is_press = event.pressed
 			is_release = !event.pressed
+			is_double = event.double_tap if event is InputEventScreenTouch else false
 			pos = event.position
 		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 			is_press = event.pressed
 			is_release = !event.pressed
+			is_double = event.double_click
 			pos = event.position
 		else:
 			return
 		
 		var cell_info = _get_cell_at(pos)
 		if cell_info.x < 0:
+			return
+		
+		# Двойной клик/тап — флаг
+		if is_press and is_double:
+			_toggle_flag(cell_info.y, cell_info.x)
+			press_handled = true
 			return
 		
 		if is_press:
