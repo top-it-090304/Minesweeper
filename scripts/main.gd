@@ -223,6 +223,12 @@ func _input(event):
 			is_release = !event.pressed
 			is_double = event.double_click
 			pos = event.position
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.pressed:
+				var rc = _get_cell_at(event.position)
+				if rc.x >= 0:
+					_toggle_flag(rc.y, rc.x)
+			return
 		else:
 			return
 		
