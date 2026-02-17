@@ -1,0 +1,105 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.75, 0.75, 0.75, 1)
+
+[node name="TopPanel" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 40.0
+offset_bottom = 100.0
+grow_horizontal = 2
+alignment = 1
+
+[node name="MineCounter" type="Label" parent="TopPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "010"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spacer1" type="Control" parent="TopPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FaceButton" type="Button" parent="TopPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(50, 50)
+text = "🙂"
+
+[node name="Spacer2" type="Control" parent="TopPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TimerLabel" type="Label" parent="TopPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FieldContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Field" type="GridContainer" parent="FieldContainer"]
+layout_mode = 2
+
+[node name="GameTimer" type="Timer" parent="."]
+wait_time = 1.0
+autostart = false
+
+[node name="DifficultyPanel" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -80.0
+offset_right = 100.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="DifficultyPanel"]
+layout_mode = 2
+text = "САПЁР"
+horizontal_alignment = 1
+
+[node name="EasyBtn" type="Button" parent="DifficultyPanel"]
+layout_mode = 2
+text = "Новичок (9×9, 10 мин)"
+
+[node name="MediumBtn" type="Button" parent="DifficultyPanel"]
+layout_mode = 2
+text = "Любитель (16×16, 40 мин)"
+
+[node name="HardBtn" type="Button" parent="DifficultyPanel"]
+layout_mode = 2
+text = "Профи (16×30, 99 мин)"
