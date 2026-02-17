@@ -244,10 +244,12 @@ func _process(delta):
 	if press_start_time > 0 and !press_handled and !game_over:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
 		if hold_time >= long_press_time:
-			# Вибро-фидбек через долгое нажатие
 			if press_cell.x >= 0:
 				_toggle_flag(press_cell.y, press_cell.x)
 				press_handled = true
+				# Вибрация на мобильных устройствах
+				if OS.has_feature("mobile"):
+					Input.vibrate_handheld(50)
 
 func _get_cell_at(pos: Vector2) -> Vector2i:
 	for child in grid.get_children():
