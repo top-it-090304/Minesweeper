@@ -6,6 +6,7 @@
 
 config/name="Сапёр"
 run/main_scene="res://scenes/main.tscn"
+config/version="4.4.1"
 config/features=PackedStringArray("4.4")
 
 [display]
