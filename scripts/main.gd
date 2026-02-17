@@ -17,6 +17,7 @@ var cells_revealed: int = 0
 
 # --- Тач ---
 var long_press_time: float = 0.4
+var chord_press_time: float = 1.2
 var press_start_time: float = -1.0
 var press_cell: Vector2i = Vector2i(-1, -1)
 var press_handled: bool = false
@@ -251,6 +252,8 @@ func _input(event):
 				var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
 				if hold_time >= long_press_time:
 					_toggle_flag(cell_info.y, cell_info.x)
+					if OS.has_feature("mobile"):
+						Input.vibrate_handheld(50)
 				else:
 					_reveal_cell(cell_info.y, cell_info.x)
 			press_start_time = -1.0
@@ -258,13 +261,16 @@ func _input(event):
 func _process(delta):
 	if press_start_time > 0 and !press_handled and !game_over:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
-		if hold_time >= long_press_time:
+		if hold_time >= chord_press_time:
+			# Очень долгий тап — открыть все соседние клетки (chord)
 			if press_cell.x >= 0:
-				_toggle_flag(press_cell.y, press_cell.x)
+				_chord_reveal(press_cell.y, press_cell.x)
 				press_handled = true
-				# Вибрация на мобильных устройствах
 				if OS.has_feature("mobile"):
-					Input.vibrate_handheld(50)
+					Input.vibrate_handheld(100)
+		elif hold_time >= long_press_time:
+			# Пока не обрабатываем — ждём, может будет chord
+			pass
 
 func _get_cell_at(pos: Vector2) -> Vector2i:
 	for child in grid.get_children():
@@ -306,6 +312,38 @@ func _reveal_cell(r: int, c: int):
 	# Проверяем победу
 	if cells_revealed == rows * cols - mine_count:
 		_game_won()
+
+func _chord_reveal(r: int, c: int):
+	# Если клетка открыта и число совпадает с количеством флагов вокруг — открыть соседей
+	# Если клетка закрыта — просто открыть все соседние закрытые клетки
+	if revealed[r][c]:
+		# Классический chord: считаем флаги вокруг
+		var flag_count = 0
+		for dr in range(-1, 2):
+			for dc in range(-1, 2):
+				var nr = r + dr
+				var nc = c + dc
+				if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+					if flagged[nr][nc]:
+						flag_count += 1
+		# Если флагов = числу на клетке, открываем все нефлагованные соседние
+		if flag_count == field[r][c]:
+			for dr in range(-1, 2):
+				for dc in range(-1, 2):
+					var nr = r + dr
+					var nc = c + dc
+					if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+						if !revealed[nr][nc] and !flagged[nr][nc]:
+							_reveal_cell(nr, nc)
+	else:
+		# Клетка закрыта — открываем все соседние нефлагованные
+		for dr in range(-1, 2):
+			for dc in range(-1, 2):
+				var nr = r + dr
+				var nc = c + dc
+				if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+					if !revealed[nr][nc] and !flagged[nr][nc]:
+						_reveal_cell(nr, nc)
 
 func _toggle_flag(r: int, c: int):
 	if revealed[r][c]:
