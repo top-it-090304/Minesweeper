@@ -1,0 +1,392 @@
+extends Control
+
+# --- Настройки поля ---
+var rows: int = 9
+var cols: int = 9
+var mine_count: int = 10
+
+# --- Состояние игры ---
+var field: Array = []        # 2D: -1 = мина, 0..8 = число соседних мин
+var revealed: Array = []     # 2D: bool
+var flagged: Array = []      # 2D: bool
+var game_started: bool = false
+var game_over: bool = false
+var elapsed_time: int = 0
+var flags_placed: int = 0
+var cells_revealed: int = 0
+
+# --- Тач ---
+var long_press_time: float = 0.4
+var press_start_time: float = -1.0
+var press_cell: Vector2i = Vector2i(-1, -1)
+var press_handled: bool = false
+
+# --- Узлы ---
+@onready var grid: GridContainer = $FieldContainer/Field
+@onready var mine_counter: Label = $TopPanel/MineCounter
+@onready var timer_label: Label = $TopPanel/TimerLabel
+@onready var face_button: Button = $TopPanel/FaceButton
+@onready var game_timer: Timer = $GameTimer
+@onready var difficulty_panel: VBoxContainer = $DifficultyPanel
+
+# --- Размеры клеток ---
+var cell_size: int = 40
+
+# --- Цвета цифр (как в XP) ---
+var number_colors = {
+	1: Color(0, 0, 1),        # синий
+	2: Color(0, 0.5, 0),      # зелёный
+	3: Color(1, 0, 0),        # красный
+	4: Color(0, 0, 0.5),      # тёмно-синий
+	5: Color(0.5, 0, 0),      # тёмно-красный
+	6: Color(0, 0.5, 0.5),    # бирюзовый
+	7: Color(0, 0, 0),        # чёрный
+	8: Color(0.5, 0.5, 0.5),  # серый
+}
+
+func _ready():
+	face_button.pressed.connect(_on_face_pressed)
+	game_timer.timeout.connect(_on_timer_timeout)
+	$DifficultyPanel/EasyBtn.pressed.connect(func(): _start_game(9, 9, 10))
+	$DifficultyPanel/MediumBtn.pressed.connect(func(): _start_game(16, 16, 40))
+	$DifficultyPanel/HardBtn.pressed.connect(func(): _start_game(16, 30, 99))
+	_show_difficulty_menu()
+
+func _show_difficulty_menu():
+	difficulty_panel.visible = true
+	grid.visible = false
+	$TopPanel.visible = false
+
+func _start_game(c: int, r: int, m: int):
+	cols = c
+	rows = r
+	mine_count = m
+	difficulty_panel.visible = false
+	grid.visible = true
+	$TopPanel.visible = true
+	_new_game()
+
+func _new_game():
+	game_started = false
+	game_over = false
+	elapsed_time = 0
+	flags_placed = 0
+	cells_revealed = 0
+	press_start_time = -1.0
+	game_timer.stop()
+	
+	_update_mine_counter()
+	_update_timer()
+	face_button.text = "🙂"
+	
+	# Расчёт размера клетки
+	var available_width = 440 - 20  # отступы
+	var available_height = 980 - 130  # верхняя панель + отступы
+	var cw = available_width / cols
+	var ch = available_height / rows
+	cell_size = int(min(cw, ch))
+	if cell_size < 24:
+		cell_size = 24
+	
+	# Инициализация массивов
+	field.clear()
+	revealed.clear()
+	flagged.clear()
+	for r in rows:
+		field.append([])
+		revealed.append([])
+		flagged.append([])
+		for c in cols:
+			field[r].append(0)
+			revealed[r].append(false)
+			flagged[r].append(false)
+	
+	_build_grid()
+
+func _build_grid():
+	# Очистка
+	for child in grid.get_children():
+		child.queue_free()
+	
+	grid.columns = cols
+	
+	for r in rows:
+		for c in cols:
+			var cell = _create_cell(r, c)
+			grid.add_child(cell)
+
+func _create_cell(r: int, c: int) -> Panel:
+	var panel = Panel.new()
+	panel.custom_minimum_size = Vector2(cell_size, cell_size)
+	panel.name = "Cell_%d_%d" % [r, c]
+	
+	# Стиль — выпуклая кнопка (как в XP)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.75, 0.75, 0.75)
+	style.border_width_top = 3
+	style.border_width_left = 3
+	style.border_width_bottom = 3
+	style.border_width_right = 3
+	style.border_color = Color(1, 1, 1)
+	style.set_border_width_all(0)
+	style.border_width_top = 3
+	style.border_width_left = 3
+	style.border_color = Color(1, 1, 1)
+	
+	var style2 = style.duplicate()
+	style2.border_width_top = 0
+	style2.border_width_left = 0
+	style2.border_width_bottom = 3
+	style2.border_width_right = 3
+	style2.border_color = Color(0.5, 0.5, 0.5)
+	
+	# Используем составной стиль через наложение
+	panel.add_theme_stylebox_override("panel", style)
+	
+	# Тёмная граница снизу-справа — через дополнительную панель
+	var shadow = Panel.new()
+	shadow.name = "Shadow"
+	shadow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var shadow_style = StyleBoxFlat.new()
+	shadow_style.bg_color = Color(0, 0, 0, 0)
+	shadow_style.border_width_bottom = 2
+	shadow_style.border_width_right = 2
+	shadow_style.border_color = Color(0.5, 0.5, 0.5)
+	shadow.add_theme_stylebox_override("panel", shadow_style)
+	panel.add_child(shadow)
+	
+	# Текст
+	var label = Label.new()
+	label.name = "Label"
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.text = ""
+	panel.add_child(label)
+	
+	# Метаданные
+	panel.set_meta("row", r)
+	panel.set_meta("col", c)
+	
+	return panel
+
+func _place_mines(first_r: int, first_c: int):
+	# Расставляем мины, избегая первого клика и его соседей
+	var safe = []
+	for dr in range(-1, 2):
+		for dc in range(-1, 2):
+			safe.append(Vector2i(first_c + dc, first_r + dr))
+	
+	var placed = 0
+	while placed < mine_count:
+		var r = randi() % rows
+		var c = randi() % cols
+		if Vector2i(c, r) in safe:
+			continue
+		if field[r][c] == -1:
+			continue
+		field[r][c] = -1
+		placed += 1
+	
+	# Считаем числа
+	for r in rows:
+		for c in cols:
+			if field[r][c] == -1:
+				continue
+			var count = 0
+			for dr in range(-1, 2):
+				for dc in range(-1, 2):
+					var nr = r + dr
+					var nc = c + dc
+					if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+						if field[nr][nc] == -1:
+							count += 1
+			field[r][c] = count
+
+func _input(event):
+	if game_over:
+		return
+	
+	if event is InputEventScreenTouch or event is InputEventMouseButton:
+		var is_press = false
+		var is_release = false
+		var pos = Vector2.ZERO
+		
+		if event is InputEventScreenTouch:
+			is_press = event.pressed
+			is_release = !event.pressed
+			pos = event.position
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			is_press = event.pressed
+			is_release = !event.pressed
+			pos = event.position
+		else:
+			return
+		
+		var cell_info = _get_cell_at(pos)
+		if cell_info.x < 0:
+			return
+		
+		if is_press:
+			press_start_time = Time.get_ticks_msec() / 1000.0
+			press_cell = cell_info
+			press_handled = false
+		elif is_release and !press_handled:
+			if cell_info == press_cell:
+				var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
+				if hold_time >= long_press_time:
+					_toggle_flag(cell_info.y, cell_info.x)
+				else:
+					_reveal_cell(cell_info.y, cell_info.x)
+			press_start_time = -1.0
+
+func _process(delta):
+	if press_start_time > 0 and !press_handled and !game_over:
+		var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
+		if hold_time >= long_press_time:
+			# Вибро-фидбек через долгое нажатие
+			if press_cell.x >= 0:
+				_toggle_flag(press_cell.y, press_cell.x)
+				press_handled = true
+
+func _get_cell_at(pos: Vector2) -> Vector2i:
+	for child in grid.get_children():
+		if child is Panel and child.has_meta("row"):
+			var rect = child.get_global_rect()
+			if rect.has_point(pos):
+				return Vector2i(child.get_meta("col"), child.get_meta("row"))
+	return Vector2i(-1, -1)
+
+func _reveal_cell(r: int, c: int):
+	if r < 0 or r >= rows or c < 0 or c >= cols:
+		return
+	if revealed[r][c] or flagged[r][c]:
+		return
+	
+	if !game_started:
+		game_started = true
+		_place_mines(r, c)
+		game_timer.start()
+	
+	revealed[r][c] = true
+	cells_revealed += 1
+	
+	if field[r][c] == -1:
+		# Мина — проигрыш
+		_game_lost(r, c)
+		return
+	
+	_update_cell_visual(r, c)
+	
+	# Если пустая — раскрываем соседей
+	if field[r][c] == 0:
+		for dr in range(-1, 2):
+			for dc in range(-1, 2):
+				if dr == 0 and dc == 0:
+					continue
+				_reveal_cell(r + dr, c + dc)
+	
+	# Проверяем победу
+	if cells_revealed == rows * cols - mine_count:
+		_game_won()
+
+func _toggle_flag(r: int, c: int):
+	if revealed[r][c]:
+		return
+	
+	flagged[r][c] = !flagged[r][c]
+	if flagged[r][c]:
+		flags_placed += 1
+	else:
+		flags_placed -= 1
+	
+	_update_cell_visual(r, c)
+	_update_mine_counter()
+
+func _update_cell_visual(r: int, c: int):
+	var idx = r * cols + c
+	if idx >= grid.get_child_count():
+		return
+	var panel = grid.get_child(idx)
+	var label = panel.get_node("Label")
+	var shadow = panel.get_node("Shadow")
+	
+	if revealed[r][c]:
+		# Плоский стиль — открытая клетка
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.78, 0.78, 0.78)
+		style.border_width_top = 1
+		style.border_width_left = 1
+		style.border_color = Color(0.5, 0.5, 0.5)
+		panel.add_theme_stylebox_override("panel", style)
+		
+		var shadow_style = StyleBoxFlat.new()
+		shadow_style.bg_color = Color(0, 0, 0, 0)
+		shadow.add_theme_stylebox_override("panel", shadow_style)
+		
+		var val = field[r][c]
+		if val > 0:
+			label.text = str(val)
+			label.add_theme_color_override("font_color", number_colors.get(val, Color.BLACK))
+			label.add_theme_font_size_override("font_size", int(cell_size * 0.6))
+		elif val == -1:
+			label.text = "💣"
+			label.add_theme_font_size_override("font_size", int(cell_size * 0.5))
+		else:
+			label.text = ""
+	elif flagged[r][c]:
+		label.text = "🚩"
+		label.add_theme_font_size_override("font_size", int(cell_size * 0.5))
+	else:
+		label.text = ""
+
+func _game_lost(hit_r: int, hit_c: int):
+	game_over = true
+	game_timer.stop()
+	face_button.text = "😵"
+	
+	# Показываем все мины
+	for r in rows:
+		for c in cols:
+			if field[r][c] == -1:
+				revealed[r][c] = true
+				_update_cell_visual(r, c)
+	
+	# Подсветить клетку, на которую наступили
+	var idx = hit_r * cols + hit_c
+	if idx < grid.get_child_count():
+		var panel = grid.get_child(idx)
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(1, 0, 0)
+		panel.add_theme_stylebox_override("panel", style)
+
+func _game_won():
+	game_over = true
+	game_timer.stop()
+	face_button.text = "😎"
+	
+	# Отмечаем оставшиеся мины флагами
+	for r in rows:
+		for c in cols:
+			if field[r][c] == -1 and !flagged[r][c]:
+				flagged[r][c] = true
+				flags_placed += 1
+				_update_cell_visual(r, c)
+	_update_mine_counter()
+
+func _on_face_pressed():
+	if game_over:
+		_new_game()
+	else:
+		_show_difficulty_menu()
+
+func _on_timer_timeout():
+	elapsed_time += 1
+	_update_timer()
+
+func _update_mine_counter():
+	var remaining = mine_count - flags_placed
+	mine_counter.text = "%03d" % remaining
+
+func _update_timer():
+	timer_label.text = "%03d" % min(elapsed_time, 999)
