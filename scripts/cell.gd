@@ -8,6 +8,12 @@ class_name MineCell
 static var bomb_tex: Texture2D = preload("res://assets/sprites/bomb.png")
 static var flag_tex: Texture2D = preload("res://assets/sprites/flag.png")
 
+static var style_closed: StyleBoxFlat = preload("res://resources/styles/closed_cell.tres")
+static var style_closed_shadow: StyleBoxFlat = preload("res://resources/styles/closed_cell_shadow.tres")
+static var style_opened: StyleBoxFlat = preload("res://resources/styles/opened_cell.tres")
+static var style_opened_shadow: StyleBoxFlat = preload("res://resources/styles/opened_cell_shadow.tres")
+static var style_red: StyleBoxFlat = preload("res://resources/styles/red_cell.tres")
+
 var row: int = 0
 var col: int = 0
 
@@ -16,6 +22,8 @@ func setup(r: int, c: int, size: int) -> void:
 	col = c
 	custom_minimum_size = Vector2(size, size)
 	label.add_theme_font_size_override("font_size", int(size * 0.6))
+	add_theme_stylebox_override("panel", style_closed)
+	shadow.add_theme_stylebox_override("panel", style_closed_shadow)
 
 func _clear_display() -> void:
 	label.text = ""
@@ -41,9 +49,9 @@ func show_number(val: int, color: Color) -> void:
 func show_empty() -> void:
 	_clear_display()
 
-func set_revealed_style(style: StyleBox, shadow_style: StyleBox) -> void:
-	add_theme_stylebox_override("panel", style)
-	shadow.add_theme_stylebox_override("panel", shadow_style)
+func set_revealed_style() -> void:
+	add_theme_stylebox_override("panel", style_opened)
+	shadow.add_theme_stylebox_override("panel", style_opened_shadow)
 
-func set_hit_style(style: StyleBox) -> void:
-	add_theme_stylebox_override("panel", style)
+func set_hit_style() -> void:
+	add_theme_stylebox_override("panel", style_red)

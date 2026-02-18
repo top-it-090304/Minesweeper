@@ -315,14 +315,7 @@ func _update_cell_visual(r: int, c: int):
 	var cell: MineCell = grid.get_child(idx)
 	
 	if revealed[r][c]:
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color(0.78, 0.78, 0.78)
-		style.border_width_top = 1
-		style.border_width_left = 1
-		style.border_color = Color(0.5, 0.5, 0.5)
-		var shadow_style = StyleBoxFlat.new()
-		shadow_style.bg_color = Color(0, 0, 0, 0)
-		cell.set_revealed_style(style, shadow_style)
+		cell.set_revealed_style()
 		
 		var val = field[r][c]
 		if val > 0:
@@ -353,9 +346,7 @@ func _game_lost(hit_r: int, hit_c: int):
 	var idx = hit_r * cols + hit_c
 	if idx < grid.get_child_count():
 		var cell: MineCell = grid.get_child(idx)
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color(1, 0, 0)
-		cell.set_hit_style(style)
+		cell.set_hit_style()
 
 func _game_won():
 	game_over = true

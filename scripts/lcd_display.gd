@@ -5,17 +5,12 @@ class_name LCDDisplay
 
 @export var digits: int = 3
 
+static var lcd_bg: StyleBoxFlat = preload("res://resources/styles/lcd_background.tres")
+
 var _labels: Array[Label] = []
 
 func _ready():
-	# Чёрный фон
-	var bg = StyleBoxFlat.new()
-	bg.bg_color = Color(0.1, 0.1, 0.1)
-	bg.corner_radius_top_left = 2
-	bg.corner_radius_top_right = 2
-	bg.corner_radius_bottom_left = 2
-	bg.corner_radius_bottom_right = 2
-	add_theme_stylebox_override("panel", bg)
+	add_theme_stylebox_override("panel", lcd_bg)
 	
 	for i in digits:
 		var lbl = Label.new()
