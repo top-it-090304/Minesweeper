@@ -228,11 +228,14 @@ func _process(delta):
 					Input.vibrate_handheld(50)
 
 func _get_cell_at(pos: Vector2) -> Vector2i:
-	for child in grid.get_children():
-		if child is MineCell:
-			var rect = child.get_global_rect()
-			if rect.has_point(pos):
-				return Vector2i(child.col, child.row)
+	var grid_rect = grid.get_global_rect()
+	if !grid_rect.has_point(pos):
+		return Vector2i(-1, -1)
+	var local_pos = pos - grid_rect.position
+	var col = int(local_pos.x / cell_size)
+	var row = int(local_pos.y / cell_size)
+	if row >= 0 and row < rows and col >= 0 and col < cols:
+		return Vector2i(col, row)
 	return Vector2i(-1, -1)
 
 func _reveal_cell(r: int, c: int):
