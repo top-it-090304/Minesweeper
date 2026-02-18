@@ -56,12 +56,24 @@ var number_colors = {
 }
 
 func _ready():
+	Engine.max_fps = 60
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	face_button.pressed.connect(_on_face_pressed)
 	game_timer.timeout.connect(_on_timer_timeout)
 	easy_btn.pressed.connect(func(): _start_game(9, 9, 10))
 	medium_btn.pressed.connect(func(): _start_game(16, 16, 40))
 	hard_btn.pressed.connect(func(): _start_game(16, 30, 99))
 	_show_difficulty_menu()
+
+func _notification(what):
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		Engine.max_fps = 1
+		if game_started and !game_over:
+			game_timer.paused = true
+	elif what == NOTIFICATION_WM_WINDOW_FOCUS_IN or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		Engine.max_fps = 60
+		if game_started and !game_over:
+			game_timer.paused = false
 
 func _show_difficulty_menu():
 	difficulty_panel.visible = true
