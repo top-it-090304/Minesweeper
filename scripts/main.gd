@@ -374,6 +374,20 @@ func _game_won():
 func _on_face_pressed():
 	if game_over:
 		_new_game()
+	elif game_started:
+		var dialog = ConfirmationDialog.new()
+		dialog.dialog_text = "Начать заново?"
+		dialog.ok_button_text = "Да"
+		dialog.cancel_button_text = "Нет"
+		dialog.confirmed.connect(func():
+			_show_difficulty_menu()
+			dialog.queue_free()
+		)
+		dialog.canceled.connect(func():
+			dialog.queue_free()
+		)
+		add_child(dialog)
+		dialog.popup_centered()
 	else:
 		_show_difficulty_menu()
 
