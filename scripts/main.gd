@@ -26,8 +26,8 @@ var press_handled: bool = false
 
 # --- Узлы ---
 @onready var grid: GridContainer = $FieldContainer/Field
-@onready var mine_counter: Label = $TopPanel/MineCounter
-@onready var timer_label: Label = $TopPanel/TimerLabel
+@onready var mine_counter: LCDDisplay = $TopPanel/MineCounter
+@onready var timer_label: LCDDisplay = $TopPanel/TimerLabel
 @onready var face_button: Button = $TopPanel/FaceButton
 @onready var game_timer: Timer = $GameTimer
 @onready var difficulty_panel: VBoxContainer = $DifficultyPanel
@@ -377,7 +377,7 @@ func _on_timer_timeout():
 
 func _update_mine_counter():
 	var remaining = mine_count - flags_placed
-	mine_counter.text = "%03d" % remaining
+	mine_counter.set_value(remaining)
 
 func _update_timer():
-	timer_label.text = "%03d" % min(elapsed_time, 999)
+	timer_label.set_value(min(elapsed_time, 999))

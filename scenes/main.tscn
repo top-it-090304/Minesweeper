@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/lcd_display.tscn" id="2"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -30,12 +31,9 @@ offset_bottom = 100.0
 grow_horizontal = 2
 alignment = 1
 
-[node name="MineCounter" type="Label" parent="TopPanel"]
+[node name="MineCounter" parent="TopPanel" instance=ExtResource("2")]
 layout_mode = 2
 custom_minimum_size = Vector2(100, 0)
-text = "010"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="Spacer1" type="Control" parent="TopPanel"]
 layout_mode = 2
@@ -50,12 +48,9 @@ text = "🙂"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TimerLabel" type="Label" parent="TopPanel"]
+[node name="TimerLabel" parent="TopPanel" instance=ExtResource("2")]
 layout_mode = 2
 custom_minimum_size = Vector2(100, 0)
-text = "000"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="FieldContainer" type="CenterContainer" parent="."]
 layout_mode = 1
