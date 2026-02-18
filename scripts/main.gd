@@ -1,5 +1,7 @@
 extends Control
 
+const CellScene = preload("res://scenes/cell.tscn")
+
 # --- Настройки поля ---
 var rows: int = 9
 var cols: int = 9
@@ -113,63 +115,9 @@ func _build_grid():
 	
 	for r in rows:
 		for c in cols:
-			var cell = _create_cell(r, c)
+			var cell = CellScene.instantiate() as MineCell
+			cell.setup(r, c, cell_size)
 			grid.add_child(cell)
-
-func _create_cell(r: int, c: int) -> Panel:
-	var panel = Panel.new()
-	panel.custom_minimum_size = Vector2(cell_size, cell_size)
-	panel.name = "Cell_%d_%d" % [r, c]
-	
-	# Стиль — выпуклая кнопка (как в XP)
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.75, 0.75, 0.75)
-	style.border_width_top = 3
-	style.border_width_left = 3
-	style.border_width_bottom = 3
-	style.border_width_right = 3
-	style.border_color = Color(1, 1, 1)
-	style.set_border_width_all(0)
-	style.border_width_top = 3
-	style.border_width_left = 3
-	style.border_color = Color(1, 1, 1)
-	
-	var style2 = style.duplicate()
-	style2.border_width_top = 0
-	style2.border_width_left = 0
-	style2.border_width_bottom = 3
-	style2.border_width_right = 3
-	style2.border_color = Color(0.5, 0.5, 0.5)
-	
-	# Используем составной стиль через наложение
-	panel.add_theme_stylebox_override("panel", style)
-	
-	# Тёмная граница снизу-справа — через дополнительную панель
-	var shadow = Panel.new()
-	shadow.name = "Shadow"
-	shadow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var shadow_style = StyleBoxFlat.new()
-	shadow_style.bg_color = Color(0, 0, 0, 0)
-	shadow_style.border_width_bottom = 2
-	shadow_style.border_width_right = 2
-	shadow_style.border_color = Color(0.5, 0.5, 0.5)
-	shadow.add_theme_stylebox_override("panel", shadow_style)
-	panel.add_child(shadow)
-	
-	# Текст
-	var label = Label.new()
-	label.name = "Label"
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.text = ""
-	panel.add_child(label)
-	
-	# Метаданные
-	panel.set_meta("row", r)
-	panel.set_meta("col", c)
-	
-	return panel
 
 func _place_mines(first_r: int, first_c: int):
 	# Расставляем мины, избегая первого клика и его соседей
@@ -271,10 +219,10 @@ func _process(delta):
 
 func _get_cell_at(pos: Vector2) -> Vector2i:
 	for child in grid.get_children():
-		if child is Panel and child.has_meta("row"):
+		if child is MineCell:
 			var rect = child.get_global_rect()
 			if rect.has_point(pos):
-				return Vector2i(child.get_meta("col"), child.get_meta("row"))
+				return Vector2i(child.col, child.row)
 	return Vector2i(-1, -1)
 
 func _reveal_cell(r: int, c: int):
@@ -359,38 +307,29 @@ func _update_cell_visual(r: int, c: int):
 	var idx = r * cols + c
 	if idx >= grid.get_child_count():
 		return
-	var panel = grid.get_child(idx)
-	var label = panel.get_node("Label")
-	var shadow = panel.get_node("Shadow")
+	var cell: MineCell = grid.get_child(idx)
 	
 	if revealed[r][c]:
-		# Плоский стиль — открытая клетка
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(0.78, 0.78, 0.78)
 		style.border_width_top = 1
 		style.border_width_left = 1
 		style.border_color = Color(0.5, 0.5, 0.5)
-		panel.add_theme_stylebox_override("panel", style)
-		
 		var shadow_style = StyleBoxFlat.new()
 		shadow_style.bg_color = Color(0, 0, 0, 0)
-		shadow.add_theme_stylebox_override("panel", shadow_style)
+		cell.set_revealed_style(style, shadow_style)
 		
 		var val = field[r][c]
 		if val > 0:
-			label.text = str(val)
-			label.add_theme_color_override("font_color", number_colors.get(val, Color.BLACK))
-			label.add_theme_font_size_override("font_size", int(cell_size * 0.6))
+			cell.show_number(val, number_colors.get(val, Color.BLACK))
 		elif val == -1:
-			label.text = "💣"
-			label.add_theme_font_size_override("font_size", int(cell_size * 0.5))
+			cell.show_mine()
 		else:
-			label.text = ""
+			cell.show_empty()
 	elif flagged[r][c]:
-		label.text = "🚩"
-		label.add_theme_font_size_override("font_size", int(cell_size * 0.5))
+		cell.show_flag()
 	else:
-		label.text = ""
+		cell.show_closed()
 
 func _game_lost(hit_r: int, hit_c: int):
 	game_over = true
@@ -407,10 +346,10 @@ func _game_lost(hit_r: int, hit_c: int):
 	# Подсветить клетку, на которую наступили
 	var idx = hit_r * cols + hit_c
 	if idx < grid.get_child_count():
-		var panel = grid.get_child(idx)
+		var cell: MineCell = grid.get_child(idx)
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(1, 0, 0)
-		panel.add_theme_stylebox_override("panel", style)
+		cell.set_hit_style(style)
 
 func _game_won():
 	game_over = true
