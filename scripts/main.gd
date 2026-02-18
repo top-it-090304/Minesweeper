@@ -2,6 +2,10 @@ extends Control
 
 const CellScene = preload("res://scenes/cell.tscn")
 
+var face_normal_tex: Texture2D = preload("res://assets/sprites/face_normal.png")
+var face_dead_tex: Texture2D = preload("res://assets/sprites/face_dead.png")
+var face_cool_tex: Texture2D = preload("res://assets/sprites/face_cool.png")
+
 # --- Настройки поля ---
 var rows: int = 9
 var cols: int = 9
@@ -80,7 +84,8 @@ func _new_game():
 	
 	_update_mine_counter()
 	_update_timer()
-	face_button.text = "🙂"
+	face_button.text = ""
+	face_button.icon = face_normal_tex
 	
 	# Расчёт размера клетки
 	var available_width = 440 - 20  # отступы
@@ -334,7 +339,8 @@ func _update_cell_visual(r: int, c: int):
 func _game_lost(hit_r: int, hit_c: int):
 	game_over = true
 	game_timer.stop()
-	face_button.text = "😵"
+	face_button.text = ""
+	face_button.icon = face_dead_tex
 	
 	# Показываем все мины
 	for r in rows:
@@ -354,7 +360,8 @@ func _game_lost(hit_r: int, hit_c: int):
 func _game_won():
 	game_over = true
 	game_timer.stop()
-	face_button.text = "😎"
+	face_button.text = ""
+	face_button.icon = face_cool_tex
 	
 	# Отмечаем оставшиеся мины флагами
 	for r in rows:
