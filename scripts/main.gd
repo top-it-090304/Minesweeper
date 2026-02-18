@@ -87,9 +87,10 @@ func _new_game():
 	face_button.text = ""
 	face_button.icon = face_normal_tex
 	
-	# Расчёт размера клетки
-	var available_width = 440 - 20  # отступы
-	var available_height = 980 - 130  # верхняя панель + отступы
+	# Расчёт размера клетки по размеру экрана
+	var screen_size = get_viewport().get_visible_rect().size
+	var available_width = screen_size.x - 20  # отступы
+	var available_height = screen_size.y - 130  # верхняя панель + отступы
 	var cw = available_width / cols
 	var ch = available_height / rows
 	cell_size = int(min(cw, ch))
