@@ -35,6 +35,10 @@ var press_handled: bool = false
 @onready var face_button: Button = $TopPanel/FaceButton
 @onready var game_timer: Timer = $GameTimer
 @onready var difficulty_panel: VBoxContainer = $DifficultyPanel
+@onready var top_panel: HBoxContainer = $TopPanel
+@onready var easy_btn: Button = $DifficultyPanel/EasyBtn
+@onready var medium_btn: Button = $DifficultyPanel/MediumBtn
+@onready var hard_btn: Button = $DifficultyPanel/HardBtn
 
 # --- Размеры клеток ---
 var cell_size: int = 40
@@ -54,15 +58,15 @@ var number_colors = {
 func _ready():
 	face_button.pressed.connect(_on_face_pressed)
 	game_timer.timeout.connect(_on_timer_timeout)
-	$DifficultyPanel/EasyBtn.pressed.connect(func(): _start_game(9, 9, 10))
-	$DifficultyPanel/MediumBtn.pressed.connect(func(): _start_game(16, 16, 40))
-	$DifficultyPanel/HardBtn.pressed.connect(func(): _start_game(16, 30, 99))
+	easy_btn.pressed.connect(func(): _start_game(9, 9, 10))
+	medium_btn.pressed.connect(func(): _start_game(16, 16, 40))
+	hard_btn.pressed.connect(func(): _start_game(16, 30, 99))
 	_show_difficulty_menu()
 
 func _show_difficulty_menu():
 	difficulty_panel.visible = true
 	grid.visible = false
-	$TopPanel.visible = false
+	top_panel.visible = false
 
 func _start_game(c: int, r: int, m: int):
 	cols = c
@@ -70,7 +74,7 @@ func _start_game(c: int, r: int, m: int):
 	mine_count = m
 	difficulty_panel.visible = false
 	grid.visible = true
-	$TopPanel.visible = true
+	top_panel.visible = true
 	_new_game()
 
 func _new_game():
