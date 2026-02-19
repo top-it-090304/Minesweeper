@@ -17,11 +17,17 @@ static var style_red: StyleBoxFlat = preload("res://resources/styles/red_cell.tr
 var row: int = 0
 var col: int = 0
 
+var _cell_size: int = 0
+
 func setup(r: int, c: int, size: int) -> void:
 	row = r
 	col = c
+	_cell_size = size
 	custom_minimum_size = Vector2(size, size)
-	label.add_theme_font_size_override("font_size", int(size * 0.6))
+
+func _ready() -> void:
+	if _cell_size > 0:
+		label.add_theme_font_size_override("font_size", int(_cell_size * 0.6))
 	add_theme_stylebox_override("panel", style_closed)
 	shadow.add_theme_stylebox_override("panel", style_closed_shadow)
 
