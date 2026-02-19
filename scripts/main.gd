@@ -12,11 +12,12 @@ var cols: int = 9
 var mine_count: int = 10
 
 # --- Состояние игры ---
+enum GameState { IDLE, PLAYING, LOST, WON }
+var state: GameState = GameState.IDLE
+
 var field: Array = []        # 2D: -1 = мина, 0..8 = число соседних мин
 var revealed: Array = []     # 2D: bool
 var flagged: Array = []      # 2D: bool
-var game_started: bool = false
-var game_over: bool = false
 var elapsed_time: int = 0
 var flags_placed: int = 0
 var cells_revealed: int = 0
@@ -99,11 +100,11 @@ func _scale_ui():
 func _notification(what):
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		Engine.max_fps = 1
-		if game_started and !game_over:
+		if state == GameState.PLAYING:
 			game_timer.paused = true
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_IN or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		Engine.max_fps = 60
-		if game_started and !game_over:
+		if state == GameState.PLAYING:
 			game_timer.paused = false
 
 func _show_difficulty_menu():
@@ -121,8 +122,8 @@ func _start_game(c: int, r: int, m: int):
 	_new_game()
 
 func _new_game():
-	game_started = false
-	game_over = false
+	state = GameState.IDLE
+	
 	elapsed_time = 0
 	flags_placed = 0
 	cells_revealed = 0
@@ -208,7 +209,7 @@ func _place_mines(first_r: int, first_c: int):
 			field[r][c] = count
 
 func _input(event):
-	if game_over:
+	if state == GameState.LOST or state == GameState.WON:
 		return
 	
 	if event is InputEventScreenTouch or event is InputEventMouseButton:
@@ -262,7 +263,7 @@ func _input(event):
 			press_start_time = -1.0
 
 func _process(delta):
-	if press_start_time > 0 and !press_handled and !game_over:
+	if press_start_time > 0 and !press_handled and state == GameState.PLAYING:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - press_start_time
 		if hold_time >= long_press_time:
 			# Долгий тап — флаг
@@ -294,28 +295,43 @@ func _reveal_cell(r: int, c: int):
 	if revealed[r][c] or flagged[r][c]:
 		return
 	
-	if !game_started:
-		game_started = true
+	if state == GameState.IDLE:
+		state = GameState.PLAYING
 		_place_mines(r, c)
 		game_timer.start()
 	
-	revealed[r][c] = true
-	cells_revealed += 1
-	
-	if field[r][c] == -1:
-		# Мина — проигрыш
-		_game_lost(r, c)
-		return
-	
-	_update_cell_visual(r, c)
-	
-	# Если пустая — раскрываем соседей
-	if field[r][c] == 0:
-		for dr in range(-1, 2):
-			for dc in range(-1, 2):
-				if dr == 0 and dc == 0:
-					continue
-				_reveal_cell(r + dr, c + dc)
+	# BFS для раскрытия клеток (вместо рекурсии — безопасно для больших полей)
+	var queue: Array[Vector2i] = [Vector2i(c, r)]
+	while queue.size() > 0:
+		var cell_pos = queue.pop_front()
+		var cc = cell_pos.x
+		var rr = cell_pos.y
+		
+		if rr < 0 or rr >= rows or cc < 0 or cc >= cols:
+			continue
+		if revealed[rr][cc] or flagged[rr][cc]:
+			continue
+		
+		revealed[rr][cc] = true
+		cells_revealed += 1
+		
+		if field[rr][cc] == -1:
+			_game_lost(rr, cc)
+			return
+		
+		_update_cell_visual(rr, cc)
+		
+		# Если пустая — добавляем соседей в очередь
+		if field[rr][cc] == 0:
+			for dr in range(-1, 2):
+				for dc in range(-1, 2):
+					if dr == 0 and dc == 0:
+						continue
+					var nr = rr + dr
+					var nc = cc + dc
+					if nr >= 0 and nr < rows and nc >= 0 and nc < cols:
+						if !revealed[nr][nc] and !flagged[nr][nc]:
+							queue.append(Vector2i(nc, nr))
 	
 	# Проверяем победу
 	if cells_revealed == rows * cols - mine_count:
@@ -388,7 +404,7 @@ func _update_cell_visual(r: int, c: int):
 		cell.show_closed()
 
 func _game_lost(hit_r: int, hit_c: int):
-	game_over = true
+	state = GameState.LOST
 	game_timer.stop()
 	face_button.text = ""
 	face_button.icon = face_dead_tex
@@ -407,7 +423,7 @@ func _game_lost(hit_r: int, hit_c: int):
 		cell.set_hit_style()
 
 func _game_won():
-	game_over = true
+	state = GameState.WON
 	game_timer.stop()
 	face_button.text = ""
 	face_button.icon = face_cool_tex
@@ -422,9 +438,9 @@ func _game_won():
 	_update_mine_counter()
 
 func _on_face_pressed():
-	if game_over:
+	if state == GameState.LOST or state == GameState.WON:
 		_new_game()
-	elif game_started:
+	elif state == GameState.PLAYING:
 		var dialog = ConfirmationDialog.new()
 		dialog.dialog_text = "Начать заново?"
 		dialog.ok_button_text = "Да"
