@@ -63,7 +63,38 @@ func _ready():
 	easy_btn.pressed.connect(func(): _start_game(9, 9, 10))
 	medium_btn.pressed.connect(func(): _start_game(16, 16, 40))
 	hard_btn.pressed.connect(func(): _start_game(16, 30, 99))
+	_scale_ui()
 	_show_difficulty_menu()
+
+func _scale_ui():
+	var screen_size = get_viewport().get_visible_rect().size
+	var scale_factor = screen_size.x / 440.0  # базовая ширина
+	
+	# Масштабируем верхнюю панель
+	top_panel.offset_top = 40 * scale_factor
+	top_panel.offset_bottom = 100 * scale_factor
+	
+	# LCD дисплеи
+	mine_counter.update_scale(scale_factor)
+	timer_label.update_scale(scale_factor)
+	
+	# Кнопка с лицом
+	face_button.custom_minimum_size = Vector2(50 * scale_factor, 50 * scale_factor)
+	
+	# FieldContainer отступ сверху
+	var field_container = $FieldContainer
+	field_container.offset_top = 110 * scale_factor
+	
+	# Меню сложности
+	difficulty_panel.offset_left = -120 * scale_factor
+	difficulty_panel.offset_right = 120 * scale_factor
+	difficulty_panel.offset_top = -80 * scale_factor
+	difficulty_panel.offset_bottom = 80 * scale_factor
+	for child in difficulty_panel.get_children():
+		if child is Button:
+			child.add_theme_font_size_override("font_size", int(16 * scale_factor))
+		elif child is Label:
+			child.add_theme_font_size_override("font_size", int(20 * scale_factor))
 
 func _notification(what):
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
@@ -105,9 +136,10 @@ func _new_game():
 	
 	# Расчёт размера клетки по размеру экрана
 	var screen_size = get_viewport().get_visible_rect().size
+	var scale_factor = screen_size.x / 440.0
 	var separation = grid.get_theme_constant("h_separation") if grid.has_theme_constant("h_separation") else 4
-	var available_width = screen_size.x - 20  # боковые отступы
-	var available_height = screen_size.y - 120  # верхняя панель (110px) + отступ
+	var available_width = screen_size.x - 20 * scale_factor
+	var available_height = screen_size.y - 120 * scale_factor
 	var cw = float(available_width - separation * (cols - 1)) / cols
 	var ch = float(available_height - separation * (rows - 1)) / rows
 	cell_size = int(min(cw, ch))

@@ -27,3 +27,8 @@ func set_value(val: int):
 	var s = "%0*d" % [digits, clampi(val, -99, 999)]
 	for i in min(s.length(), _labels.size()):
 		_labels[i].text = s[i]
+
+func update_scale(scale_factor: float):
+	for lbl in _labels:
+		lbl.custom_minimum_size = Vector2(20 * scale_factor, 40 * scale_factor)
+		lbl.add_theme_font_size_override("font_size", int(28 * scale_factor))

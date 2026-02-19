@@ -15,7 +15,7 @@ window/size/viewport_width=440
 window/size/viewport_height=980
 window/size/mode=0
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep_width"
+window/stretch/aspect="expand"
 window/handheld/orientation=1
 window/vsync/vsync_mode=0
 
