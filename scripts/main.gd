@@ -105,13 +105,14 @@ func _new_game():
 	
 	# Расчёт размера клетки по размеру экрана
 	var screen_size = get_viewport().get_visible_rect().size
+	var separation = grid.get_theme_constant("h_separation") if grid.has_theme_constant("h_separation") else 4
 	var available_width = screen_size.x - 20  # отступы
 	var available_height = screen_size.y - 130  # верхняя панель + отступы
-	var cw = available_width / cols
-	var ch = available_height / rows
+	var cw = (available_width - separation * (cols - 1)) / cols
+	var ch = (available_height - separation * (rows - 1)) / rows
 	cell_size = int(min(cw, ch))
-	if cell_size < 24:
-		cell_size = 24
+	if cell_size < 20:
+		cell_size = 20
 	
 	# Инициализация массивов
 	field.clear()
