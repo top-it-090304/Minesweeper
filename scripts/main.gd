@@ -245,8 +245,13 @@ func _get_cell_at(pos: Vector2) -> Vector2i:
 	if !grid_rect.has_point(pos):
 		return Vector2i(-1, -1)
 	var local_pos = pos - grid_rect.position
-	var col = int(local_pos.x / cell_size)
-	var row = int(local_pos.y / cell_size)
+	var separation = grid.get_theme_constant("h_separation") if grid.has_theme_constant("h_separation") else 4
+	var step = cell_size + separation
+	var col = int(local_pos.x / step)
+	var row = int(local_pos.y / step)
+	# Проверка что клик не попал в промежуток между клетками
+	if local_pos.x - col * step >= cell_size or local_pos.y - row * step >= cell_size:
+		return Vector2i(-1, -1)
 	if row >= 0 and row < rows and col >= 0 and col < cols:
 		return Vector2i(col, row)
 	return Vector2i(-1, -1)
